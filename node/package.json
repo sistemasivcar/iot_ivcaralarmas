@@ -1,0 +1,11 @@
+{
+  "name": "alarmaiot",
+  "version": "1.0.0",
+  "description": "alarma con iot",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "gastoncastro",
+  "license": "MIT"
+}
