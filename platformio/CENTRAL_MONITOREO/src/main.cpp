@@ -56,7 +56,9 @@ byte pulsadorFlash = 16;
 char phone[50];
 char phone_ivcar[50];
 char mensaje[100];
+char mensaje_ivcar[100];
 String mje;
+String mje_ivcar;
 
 // CONFIGURACION DE UART GSM
 #define CONFIG_GSM_RXPIN 5
@@ -233,6 +235,7 @@ void callback(char* topic, byte* payload, unsigned int length){
   String name = getValues(incoming,',',0);
   String phone_str = getValues(incoming,',',1);
   String serie = getValues(incoming,',',2);
+  String alias = getValues(incoming,',',3);
 
   String phone_ivcar_str = "+543385448580";
 
@@ -242,7 +245,7 @@ void callback(char* topic, byte* payload, unsigned int length){
 // ********* SMS ACTIVACION ***********************
   if(str_topic == "sms/act"){
 
-    mje = "IVCAR ACTIVADA " + name;
+    mje = alias + ": ACTIVADA";
     mje.toCharArray(mensaje, 100);
     Serial.println(mje);
     enviarSMS(phone, mensaje);
@@ -252,7 +255,7 @@ void callback(char* topic, byte* payload, unsigned int length){
 // ********* SMS DESACTIVACION ***********************
 if(str_topic == "sms/desact"){
 
-  mje = "IVCAR DESACTIVADA " + name;
+  mje =  alias + ": DESACTIVADA";
   mje.toCharArray(mensaje, 100);
   Serial.println(mje);
   enviarSMS(phone, mensaje);
@@ -268,8 +271,10 @@ if(str_topic == "sms/robo"){
 
   client.publish(topic_monitoreo, msj_monitoreo);
 
-  mje = "IVCAR ROBO " + name;
+  mje =  alias + ": ROBO";
+  mje_ivcar =  "ROBO: " + name;
   mje.toCharArray(mensaje, 100);
+  mje_ivcar.toCharArray(mensaje_ivcar, 100);
   Serial.println("monitoreo dice: " + msj_monitoreo_aux);
 
   enviarSMS(phone, mensaje);
@@ -278,7 +283,7 @@ if(str_topic == "sms/robo"){
   delay(3000);
   llamadaTel(phone_ivcar);
   delay(3000);
-  enviarSMS(phone_ivcar, mensaje);
+  enviarSMS(phone_ivcar, mensaje_ivcar);
   delay(3000);
 }
 
@@ -286,11 +291,13 @@ if(str_topic == "sms/robo"){
 // ********* SMS RESTAURACION ***********************
 if(str_topic == "sms/res"){
 
-  mje = "IVCAR RESTAURADA " + name;
+  mje =  alias + ": RESTAURADA";
+  mje_ivcar =  "RESTAURADA: " + name;
   mje.toCharArray(mensaje, 100);
+  mje_ivcar.toCharArray(mensaje_ivcar, 100);
   enviarSMS(phone, mensaje);
   delay(1000);
-  enviarSMS(phone_ivcar, mensaje);
+  enviarSMS(phone_ivcar, mensaje_ivcar);
   delay(1000);
   }
 }
