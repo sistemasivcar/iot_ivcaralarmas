@@ -74,6 +74,9 @@ client.on('message', function (topic, message) {
     var mov = sp[2];
     var abertura = sp[3];
 
+    // *************************************************************
+    //              PUBLICACION PARA ENVIO DE MENSAJES
+    // *************************************************************
 
     // SI EL DISPOSITIVO LE PERTENECE A ALGÚN USUARIO (sino no manda sms)
     var query = "SELECT * FROM devices WHERE devices_serie = " + device_serie + "";
@@ -89,14 +92,13 @@ client.on('message', function (topic, message) {
     status_monitoreo = result[0].status_monitoreo;
 
 
-
     // CONSULTO EL PHONE y NAME DE ESE USUARIO
     var query = "SELECT * FROM user_device WHERE devices_serie = " + device_serie + "";
     con.query(query, function (err, result, fields) {
       if (err) throw err;
       phone = result[0].users_phone;
       name = result[0].users_name;
-      
+
             // ***********************************************
             // ENVIO MENSAJE DE ACTIVACION POR CONTROL REMOTO
             // ***********************************************
@@ -107,11 +109,17 @@ client.on('message', function (topic, message) {
             flag_desact_user = result[0].flag_desact;
             last_data_estado = result[0].last_data_estado;
 
-            if (last_data_estado == 1 && flag_act_user == 0 && status_monitoreo == 0){
-              phone_to_send = "+54" + phone;
-              msj_activacion = name + "," + phone_to_send + "," + device_serie
+            var query = "SELECT devices_alias FROM devices WHERE devices_serie = " + device_serie + "";
+            con.query(query, function (err, result, fields) {
+              if (err) throw err;
+              alias = result[0].devices_alias;
 
-              client.publish("sms/act", name + "," + phone_to_send + "," + device_serie); // sms/activacion - msg_to_send, phone_to_send
+            if (last_data_estado == 1 && flag_act_user == 0 && status_monitoreo == 0){
+
+              phone_to_send = "+54" + phone;
+              msj_activacion = name + "," + phone_to_send + "," + device_serie + "," + alias
+
+              client.publish("sms/act", msj_activacion); // sms/activacion - msg_to_send, phone_to_send
               console.log("Publico el mensaje: " + msj_activacion);
 
               var query = "INSERT INTO `act_desact` (`act_desact_command`, `act_desact_device_serie`) VALUES (1, " + device_serie + ");";
@@ -128,9 +136,9 @@ client.on('message', function (topic, message) {
             }
             else if (last_data_estado == 0 && flag_desact_user == 0 && status_monitoreo == 0){
               phone_to_send = "+54" + phone;
-              msj_desactivacion = name + "," + phone_to_send  + "," + device_serie
+              msj_desactivacion = name + "," + phone_to_send  + "," + device_serie + "," + alias
 
-              client.publish("sms/desact", name + "," + phone_to_send + "," + device_serie); // sms/activacion - msg_to_send, phone_to_send
+              client.publish("sms/desact", msj_desactivacion); // sms/activacion - msg_to_send, phone_to_send
               console.log("Publico el mensaje: " + msj_desactivacion);
 
               var query = "INSERT INTO `act_desact` (`act_desact_command`, `act_desact_device_serie`) VALUES (0, " + device_serie + ");";
@@ -163,9 +171,9 @@ client.on('message', function (topic, message) {
 
               // ENVIO EL MENSAJE
               phone_to_send = "+54" + phone;
-              msj_robo = name + "," + phone_to_send  + "," + device_serie
+              msj_robo = name + "," + phone_to_send  + "," + device_serie + "," + alias
 
-              client.publish("sms/robo", name + "," + phone_to_send + "," + device_serie); // sms/activacion - msg_to_send, phone_to_send
+              client.publish("sms/robo", msj_robo); // sms/activacion - msg_to_send, phone_to_send
               console.log("Publico el mensaje: " + msj_robo);
 
               var query = "INSERT INTO `robo_res` (`robo_res_command`, `robo_res_device_serie`) VALUES (1, " + device_serie + ");";
@@ -186,9 +194,9 @@ client.on('message', function (topic, message) {
 
               // ENVIO EL MENSAJE
               phone_to_send = "+54" + phone;
-              msj_res = name + "," + phone_to_send  + "," + device_serie
+              msj_res = name + "," + phone_to_send  + "," + device_serie + "," + alias
 
-              client.publish("sms/res", name + "," + phone_to_send + "," + device_serie); // sms/activacion - msg_to_send, phone_to_send
+              client.publish("sms/res", msj_res); // sms/activacion - msg_to_send, phone_to_send
               console.log("Publico el mensaje: " + msj_res);
 
               var query = "INSERT INTO `robo_res` (`robo_res_command`, `robo_res_device_serie`) VALUES (0, " + device_serie + ");";
@@ -207,7 +215,8 @@ client.on('message', function (topic, message) {
             });
           });
         });
-      }
+      });
+    }
 });
 
     // **********************************************
@@ -334,3 +343,4 @@ setInterval(function () {
   });
 
 },);
+
