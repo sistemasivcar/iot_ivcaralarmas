@@ -300,6 +300,36 @@ if(str_topic == "sms/res"){
   enviarSMS(phone_ivcar, mensaje_ivcar);
   delay(1000);
   }
+
+
+  if(str_topic == "sms/desc"){
+
+    mje =  alias + ": SIN CONEXION";
+    mje_ivcar =  "SIN CONEXION: " + name;
+    mje.toCharArray(mensaje, 100);
+    mje_ivcar.toCharArray(mensaje_ivcar, 100);
+    enviarSMS(phone, mensaje);
+    delay(1000);
+    //enviarSMS(phone_ivcar, mensaje_ivcar);
+    delay(1000);
+
+
+  }
+
+  if(str_topic == "sms/conn"){
+
+    mje =  alias + ": RECUPERO CONEXION";
+    mje_ivcar =  "RECUPERO CONEXION: " + name;
+    mje.toCharArray(mensaje, 100);
+    mje_ivcar.toCharArray(mensaje_ivcar, 100);
+    enviarSMS(phone, mensaje);
+    delay(1000);
+    //enviarSMS(phone_ivcar, mensaje_ivcar);
+    delay(1000);
+
+
+  }
+
 }
 
 void enviarSMS(char* phone, char* mensaje){
@@ -353,28 +383,37 @@ void reconnectMQTT() {
 		if (client.connect(clientId.c_str(),mqtt_user,mqtt_pass)) {
 			Serial.println("Conectado!");
 
-      client.publish("alarma/monitoreo", "0");
+      client.publish("alarma/monitoreo", "0");// estoy disponible
+      client.publish("alarma/monitoreo", "2");// estoy conectado
 
       // Nos suscribimos a comandos
         char topic_act[25];
         char topic_desact[25];
         char topic_robo[25];
         char topic_res[25];
+        char topic_desc[25];
+        char topic_conn[25];
 
         String topic_aux_act = "sms/act";
         String topic_aux_desact = "sms/desact";
         String topic_aux_robo = "sms/robo";
         String topic_aux_res = "sms/res";
+        String topic_aux_desc = "sms/desc";
+        String topic_aux_conn = "sms/conn";
 
         topic_aux_act.toCharArray(topic_act,25);
         topic_aux_desact.toCharArray(topic_desact,25);
         topic_aux_robo.toCharArray(topic_robo,25);
         topic_aux_res.toCharArray(topic_res,25);
+        topic_aux_desc.toCharArray(topic_desc,25);
+        topic_aux_conn.toCharArray(topic_conn,25);
 
         client.subscribe(topic_act);
         client.subscribe(topic_desact);
         client.subscribe(topic_robo);
         client.subscribe(topic_res);
+        client.subscribe(topic_desc);
+        client.subscribe(topic_conn);
 
 		} else {
 			Serial.print("falló :( con error -> ");
