@@ -1,6 +1,6 @@
 //        topico                    mensaje
 //  ----------------------------------------
-//    alarma/values/device  ---->   1,1,1,1
+//    alarma/values/106329  ---->   1,1,1,1
 //    alarma/command/device ---->   activar
 
 //const client_twilio = require('twilio')('ACc4088bddd2de96befccaa8d3f9e17928', 'e148cf6c08b4417e05358bf028fbc310');
@@ -17,6 +17,8 @@ var sirena_user;
 
 var msj_to_send; // sirena
 var msg_to_send; // act/desact
+var mensaje_desc;
+var mensaje_conn;
 
 //CREDENCIALES MYSQL
 var con = mysql.createConnection({
@@ -55,6 +57,7 @@ client.subscribe('alarma/#', function (err) {
 //      CUANDO RECIBO UN MENSAJE...
 // **********************************
 client.on('message', function (topic, message) {
+
   var topic_splitted = topic.split("/");
   var query = topic_splitted[1];
   var device_serie = topic_splitted[2];
@@ -84,6 +87,31 @@ client.on('message', function (topic, message) {
     if (err) throw err;
 
     if (result.length > 0){
+
+      // ************************
+      //   UPDATE EN LAST DATA
+      // ************************
+
+      //// ********* EXISTE ESA SERIE EN TABLA LAST_DATA? ********* ////
+      var query = "SELECT last_data_serie FROM last_data WHERE last_data_serie = " + device_serie + "";
+      con.query(query, function (err, result, fields) {
+        if (err) throw err;
+
+        if (result.length > 0){
+          // ACTUALIZO DATOS
+          var query = "UPDATE `admin_alarmaiot`.`last_data` SET `last_data_estado`='" + estado + "', `last_data_sirena`='" + sirena + "', `last_data_abertura`='" + abertura + "', `last_data_mov`='" + mov + "', `last_data_status`='1', `flag_desc`='0' WHERE last_data_serie = " + device_serie + "";
+          con.query(query, function (err, result, fields) {
+            if (err) throw err;
+          });
+        }else{
+          // INSERTO EL DATO EN LAST_DATA
+          var query = "INSERT INTO `admin_alarmaiot`.`last_data` (`last_data_estado`, `last_data_sirena`, `last_data_abertura`, `last_data_mov`, `last_data_disp1`, `last_data_disp2`, `last_data_status`, `last_data_serie`, `flag_desc`) VALUES (" + estado + ", " + sirena + ", " + abertura + ", " + mov + ",0,0,1, " + device_serie + ", 0);";
+          con.query(query, function (err, result, fields) {
+            if (err) throw err;
+          });
+        }
+      });
+
 
     // CONSULTO EL ESTADO DE CENTRAL MONITOREO
     var query = "SELECT status_monitoreo FROM last_data WHERE last_data_serie = 2556800";
@@ -220,7 +248,7 @@ client.on('message', function (topic, message) {
 });
 
     // **********************************************
-    // INSERTO EN DATA - VIVOS - UPDATE EN LAST_DATA
+    // INSERTO EN DATA - VIVOS
     // **********************************************
 
     //// INSERTO EN TABLA DATOS ////
@@ -230,26 +258,6 @@ client.on('message', function (topic, message) {
       //console.log("DATO INSERTADO")
     });
 
-    //// ********* EXISTE ESA SERIE EN TABLA LAST_DATA? ********* ////
-    var query = "SELECT last_data_serie FROM last_data WHERE last_data_serie = " + device_serie + "";
-    con.query(query, function (err, result, fields) {
-      if (err) throw err;
-
-      if (result.length > 0){
-        // ACTUALIZO DATOS
-        var query = "UPDATE `admin_alarmaiot`.`last_data` SET `last_data_estado`='" + estado + "', `last_data_sirena`='" + sirena + "', `last_data_abertura`='" + abertura + "', `last_data_mov`='" + mov + "', `last_data_status`='1' WHERE last_data_serie = " + device_serie + "";
-        con.query(query, function (err, result, fields) {
-          if (err) throw err;
-        });
-      }else{
-        // INSERTO EL DATO EN LAST_DATA
-        var query = "INSERT INTO `admin_alarmaiot`.`last_data` (`last_data_estado`, `last_data_sirena`, `last_data_abertura`, `last_data_mov`, `last_data_disp1`, `last_data_disp2`, `last_data_status`, `last_data_serie`) VALUES (" + estado + ", " + sirena + ", " + abertura + ", " + mov + ",0,0,1, " + device_serie + " );";
-        con.query(query, function (err, result, fields) {
-          if (err) throw err;
-        });
-      }
-    });
-
     //// ********* PONGO EN 1 VIVOS  *********  ////
     var query = "UPDATE `admin_alarmaiot`.`devices` SET `devices_status`= '1' WHERE devices_serie = " + device_serie + "";
     con.query(query, function (err, result, fields) {
@@ -257,7 +265,7 @@ client.on('message', function (topic, message) {
     });
   }
 // ********************************************************************************************************
-//                                                    TOPICO COMMAND
+//                                                    TOPICO COMMAND (no)
 // ********************************************************************************************************
   else if (query == "commandd"){
 
@@ -319,8 +327,17 @@ client.on('message', function (topic, message) {
       con.query(query, function (err, result, fields) {
         if (err) throw err;
       });
-    }
+    }else if (msg == "2"){
+      var query = "UPDATE `admin_alarmaiot`.`last_data` SET `last_data_status`= 1 WHERE last_data_serie = 2556800";
+      con.query(query, function (err, result, fields) {
+        if (err) throw err;
+      });
 
+      var query = "UPDATE `admin_alarmaiot`.`devices` SET `devices_status`= 1 WHERE devices_serie = 2556800";
+      con.query(query, function (err, result, fields) {
+        if (err) throw err;
+      });
+    }
 
   }
 });//callbak
@@ -328,7 +345,7 @@ client.on('message', function (topic, message) {
 
 con.connect(function(err){
   if (err) throw err;
-  var query = "SELECT * FROM devices WHERE 1";
+  var query = "SELECT * FROM last_data WHERE 1";
   con.query(query, function (err, result, fields) {
     if (err) throw err;
   });
@@ -336,11 +353,66 @@ con.connect(function(err){
 });
 //para mantener la sesión con mysql abierta
 setInterval(function () {
-  var query ='SELECT 1 + 1 as result';
 
+
+  var query ='SELECT * FROM last_data WHERE 1';
   con.query(query, function (err, result, fields) {
     if (err) throw err;
+
+    for (var i = 0; i < result.length; i++) {
+
+      device_serie = result[i].last_data_serie;
+      device_status = result[i].last_data_status;
+      flag_desconectado = result[i].flag_desc;
+      flag_conectado = result[i].flag_conn;
+
+      if (device_status == 0 && flag_desconectado == 0){
+
+        var query ="SELECT * FROM user_device WHERE devices_serie = " + device_serie + "";
+        con.query(query, function (err, result, fields) {
+          if (err) throw err;
+          alias = result[0].devices_alias;
+          serie = result[0].devices_serie;
+          phone = result[0].users_phone;
+          name = result[0].users_name;
+
+          phone_to_send = "+54" + phone;
+          mensaje_desc = name +","+ phone +","+ serie +","+ alias
+          client.publish("sms/desc", mensaje_desc); // sms/activacion - msg_to_send, phone_to_send
+
+          console.log(mensaje_desc + "---> DESCONECTADO")
+          var query = "UPDATE `admin_alarmaiot`.`last_data` SET `flag_desc`= 1, `flag_conn`= 0 WHERE last_data_serie = " + serie + "";
+          con.query(query, function (err, result, fields) {
+            if (err) throw err;
+          });
+
+        });
+
+    }else if (device_status == 1 && flag_conectado == 0){
+
+      var query ="SELECT * FROM user_device WHERE devices_serie = " + device_serie + "";
+      con.query(query, function (err, result, fields) {
+        if (err) throw err;
+        alias = result[0].devices_alias;
+        serie = result[0].devices_serie;
+        phone = result[0].users_phone;
+        name = result[0].users_name;
+
+        phone_to_send = "+54" + phone;
+        mensaje_conn = name +","+ phone +","+ serie +","+ alias
+        client.publish("sms/conn", mensaje_conn);
+
+        console.log(mensaje_conn + "---> CONECTADO")
+        var query = "UPDATE `admin_alarmaiot`.`last_data` SET `flag_conn`= 1, `flag_desc`= 0 WHERE last_data_serie = " + serie + "";
+        con.query(query, function (err, result, fields) {
+          if (err) throw err;
+        });
+
+      });
+
+    }
+  }
   });
 
-},);
 
+  }, 5000);
